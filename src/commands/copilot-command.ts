@@ -117,7 +117,9 @@ export class CopilotCommand extends ToolCommand {
     const copilotFrontmatter: CopilotCommandFrontmatter = {
       mode: "agent",
       description: rulesyncFrontmatter.description,
-      model: rulesyncFrontmatter.copilot?.model,
+      ...(rulesyncFrontmatter.copilot?.model && {
+        model: rulesyncFrontmatter.copilot.model,
+      }),
     };
 
     const body = rulesyncCommand.getBody();

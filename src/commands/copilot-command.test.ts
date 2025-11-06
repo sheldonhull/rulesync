@@ -391,8 +391,8 @@ Body content`;
       expect(copilotCommand.getFrontmatter()).toEqual({
         mode: "agent",
         description: "Command without model",
-        model: undefined,
       });
+      expect(copilotCommand.getFrontmatter().model).toBeUndefined();
     });
   });
 
