@@ -15,6 +15,7 @@ import {
 export const CopilotCommandFrontmatterSchema = z.object({
   mode: z.literal("agent"),
   description: z.string(),
+  model: z.optional(z.string()),
 });
 
 export type CopilotCommandFrontmatter = z.infer<typeof CopilotCommandFrontmatterSchema>;
@@ -65,6 +66,11 @@ export class CopilotCommand extends ToolCommand {
     const rulesyncFrontmatter: RulesyncCommandFrontmatter = {
       targets: ["*"],
       description: this.frontmatter.description,
+      ...(this.frontmatter.model && {
+        copilot: {
+          model: this.frontmatter.model,
+        },
+      }),
     };
 
     // Strip .prompt.md extension and normalize to .md
@@ -111,6 +117,7 @@ export class CopilotCommand extends ToolCommand {
     const copilotFrontmatter: CopilotCommandFrontmatter = {
       mode: "agent",
       description: rulesyncFrontmatter.description,
+      model: rulesyncFrontmatter.copilot?.model,
     };
 
     const body = rulesyncCommand.getBody();

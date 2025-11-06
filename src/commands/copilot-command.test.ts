@@ -209,6 +209,53 @@ Body content`;
 
       expect(rulesyncCommand.getRelativeFilePath()).toBe("example.md");
     });
+
+    it("should preserve model field when converting to RulesyncCommand", () => {
+      const command = new CopilotCommand({
+        baseDir: testDir,
+        relativeDirPath: join(".github", "prompts"),
+        relativeFilePath: "model-test.prompt.md",
+        frontmatter: {
+          mode: "agent",
+          description: "Test with model",
+          model: "claude-haiku-4.5",
+        },
+        body: "Test body",
+        validate: true,
+      });
+
+      const rulesyncCommand = command.toRulesyncCommand();
+
+      expect(rulesyncCommand.getFrontmatter()).toEqual({
+        targets: ["*"],
+        description: "Test with model",
+        copilot: {
+          model: "claude-haiku-4.5",
+        },
+      });
+    });
+
+    it("should not include copilot field when model is not present", () => {
+      const command = new CopilotCommand({
+        baseDir: testDir,
+        relativeDirPath: join(".github", "prompts"),
+        relativeFilePath: "no-model.prompt.md",
+        frontmatter: {
+          mode: "agent",
+          description: "Test without model",
+        },
+        body: "Test body",
+        validate: true,
+      });
+
+      const rulesyncCommand = command.toRulesyncCommand();
+
+      expect(rulesyncCommand.getFrontmatter()).toEqual({
+        targets: ["*"],
+        description: "Test without model",
+      });
+      expect(rulesyncCommand.getFrontmatter().copilot).toBeUndefined();
+    });
   });
 
   describe("fromRulesyncCommand", () => {
@@ -290,6 +337,63 @@ Body content`;
         description: "",
       });
     });
+
+    it("should extract model field from RulesyncCommand with copilot.model", () => {
+      const rulesyncCommand = new RulesyncCommand({
+        baseDir: testDir,
+        relativeDirPath: ".rulesync/commands",
+        relativeFilePath: "model-command.md",
+        frontmatter: {
+          targets: ["copilot"],
+          description: "Command with model",
+          copilot: {
+            model: "claude-haiku-4.5",
+          },
+        },
+        body: "Model test content",
+        fileContent: "",
+        validate: true,
+      });
+
+      const copilotCommand = CopilotCommand.fromRulesyncCommand({
+        baseDir: testDir,
+        rulesyncCommand,
+        validate: true,
+      });
+
+      expect(copilotCommand.getFrontmatter()).toEqual({
+        mode: "agent",
+        description: "Command with model",
+        model: "claude-haiku-4.5",
+      });
+    });
+
+    it("should handle RulesyncCommand without copilot.model field", () => {
+      const rulesyncCommand = new RulesyncCommand({
+        baseDir: testDir,
+        relativeDirPath: ".rulesync/commands",
+        relativeFilePath: "no-model-command.md",
+        frontmatter: {
+          targets: ["copilot"],
+          description: "Command without model",
+        },
+        body: "No model content",
+        fileContent: "",
+        validate: true,
+      });
+
+      const copilotCommand = CopilotCommand.fromRulesyncCommand({
+        baseDir: testDir,
+        rulesyncCommand,
+        validate: true,
+      });
+
+      expect(copilotCommand.getFrontmatter()).toEqual({
+        mode: "agent",
+        description: "Command without model",
+        model: undefined,
+      });
+    });
   });
 
   describe("fromFile", () => {
@@ -314,6 +418,35 @@ Body content`;
         description: "Test copilot command description",
       });
       expect(command.getRelativeFilePath()).toBe("test-file-command.prompt.md");
+    });
+
+    it("should load CopilotCommand from file with model field", async () => {
+      const contentWithModel = `---
+mode: agent
+description: Test command with model
+model: claude-haiku-4.5
+---
+
+This is a command with a model specified.`;
+
+      const commandsDir = join(testDir, ".github", "prompts");
+      const filePath = join(commandsDir, "model-command.prompt.md");
+
+      await writeFileContent(filePath, contentWithModel);
+
+      const command = await CopilotCommand.fromFile({
+        baseDir: testDir,
+        relativeFilePath: "model-command.prompt.md",
+        validate: true,
+      });
+
+      expect(command).toBeInstanceOf(CopilotCommand);
+      expect(command.getFrontmatter()).toEqual({
+        mode: "agent",
+        description: "Test command with model",
+        model: "claude-haiku-4.5",
+      });
+      expect(command.getBody()).toBe("This is a command with a model specified.");
     });
 
     it("should handle file path with subdirectories", async () => {
