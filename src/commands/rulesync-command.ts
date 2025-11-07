@@ -14,6 +14,11 @@ import { parseFrontmatter, stringifyFrontmatter } from "../utils/frontmatter.js"
 export const RulesyncCommandFrontmatterSchema = z.object({
   targets: RulesyncTargetsSchema,
   description: z.string(),
+  copilot: z.optional(
+    z.object({
+      model: z.string(),
+    }),
+  ),
 });
 
 export type RulesyncCommandFrontmatter = z.infer<typeof RulesyncCommandFrontmatterSchema>;
